@@ -63,7 +63,7 @@ jobs:
       contents: read
       id-token: write
     name: Lint
-    runs-on: depot-ubuntu-24.04-16
+    runs-on: depot-ubuntu-24.04-8
     timeout-minutes: 10
     steps:
       - name: Checkout

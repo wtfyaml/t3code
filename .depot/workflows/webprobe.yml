@@ -1,0 +1,65 @@
+name: Web probe
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  test_web:
+    permissions:
+      contents: read
+      id-token: write
+    name: Test Web ${{ matrix.size }} vCPU (${{ matrix.rep }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { size: 4, label: depot-ubuntu-24.04-4, rep: a }
+          - { size: 8, label: depot-ubuntu-24.04-8, rep: a }
+          - { size: 8, label: depot-ubuntu-24.04-8, rep: b }
+          - { size: 16, label: depot-ubuntu-24.04-16, rep: a }
+    runs-on: ${{ matrix.label }}
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            /*
+            !/.repos/
+            !/apps/mobile/modules/t3-terminal/Vendor/**/*.a
+          sparse-checkout-cone-mode: false
+
+      - name: Setup Vite+
+        uses: ./.github/actions/setup-ci-deps
+        with:
+          task-cache-read-token: ${{ secrets.T3_TASK_CACHE_READ_TOKEN }}
+
+      # The browser project runs React tests in headless Chromium. Same cache key as
+      # test_server, so both jobs share one downloaded browser.
+      - name: Resolve Playwright version
+        id: playwright_version
+        run: echo "version=$(node -p "require('./apps/web/node_modules/playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Chromium
+        id: chromium_cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-shell-${{ runner.os }}-${{ runner.arch }}-${{ steps.playwright_version.outputs.version }}
+
+      - name: Install Chromium for web browser tests
+        if: steps.chromium_cache.outputs.cache-hit != 'true'
+        run: node apps/web/node_modules/playwright/cli.js install --only-shell chromium
+
+      - name: Install missing Chromium system dependencies
+        run: |
+          browser=$(find "$HOME/.cache/ms-playwright" -name chrome-headless-shell -type f -print -quit)
+          test -n "$browser"
+          if ldd "$browser" | grep '=> not found'; then
+            node apps/web/node_modules/playwright/cli.js install-deps chromium
+          fi
+
+      - name: Machine
+        run: nproc; lscpu | grep -E "Model name|MHz|L3" || true; df -h .; mount | grep " / " || true
+
+      - name: Test
+        run: vp run --filter @t3tools/web test
