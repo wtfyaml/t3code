@@ -448,6 +448,16 @@ jobs:
             node apps/server/node_modules/playwright-core/cli.js install-deps chromium
           fi
 
+      # Depot CI sandboxes have no IPv6 (listen on ::1 fails with EAFNOSUPPORT),
+      # and this test hangs until its timeout instead of failing. Skip only it.
+      - name: Skip IPv6-only test when the kernel has no IPv6
+        if: steps.changes.outputs.test_server != 'false'
+        run: |
+          if ! test -d /proc/sys/net/ipv6; then
+            sed -i 's/it.effect("publishes an IPv6-only server/it.effect.skip("publishes an IPv6-only server/' apps/server/src/cli/pair.test.ts
+            grep -c 'it.effect.skip("publishes an IPv6-only' apps/server/src/cli/pair.test.ts
+          fi
+
       - name: Test
         if: steps.changes.outputs.test_server != 'false'
         env:
