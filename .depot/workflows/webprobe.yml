@@ -12,10 +12,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { size: 4, label: depot-ubuntu-24.04-4, rep: a }
-          - { size: 8, label: depot-ubuntu-24.04-8, rep: a }
-          - { size: 8, label: depot-ubuntu-24.04-8, rep: b }
           - { size: 16, label: depot-ubuntu-24.04-16, rep: a }
+          - { size: 16, label: depot-ubuntu-24.04-16, rep: b }
+          - { size: 16, label: depot-ubuntu-24.04-16, rep: c }
+          - { size: 32, label: depot-ubuntu-24.04-32, rep: a }
+          - { size: 32, label: depot-ubuntu-24.04-32, rep: b }
     runs-on: ${{ matrix.label }}
     timeout-minutes: 10
     steps:
