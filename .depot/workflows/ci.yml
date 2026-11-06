@@ -330,7 +330,7 @@ jobs:
     name: Test Web
     needs: changes
     if: ${{ !cancelled() && needs.changes.outputs.test_web != 'false' }}
-    runs-on: depot-ubuntu-24.04-8
+    runs-on: depot-ubuntu-24.04-16
     timeout-minutes: 10
     steps:
       - name: Checkout
