@@ -1,0 +1,17 @@
+name: Probe
+on: workflow_dispatch
+jobs:
+  probe:
+    runs-on: depot-ubuntu-24.04-8
+    steps:
+      - run: |
+          set -x
+          uname -r; nproc; df -h /dev/shm /tmp; mount | grep -E 'shm|/tmp' || true
+          grep MHz /proc/cpuinfo | sort | uniq -c | head; cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || true
+          cat /proc/pressure/cpu /proc/pressure/io 2>/dev/null || true
+          ulimit -a | grep -E 'open|proc'
+          cat /proc/sys/kernel/random/entropy_avail
+          time node -e 'let s=0;for(let i=0;i<3e8;i++)s+=i%7;console.log(s)'
+          time (for i in $(seq 1 2000); do cat /proc/self/stat >/dev/null; done)
+          time (for i in $(seq 1 300); do /bin/true; done)
+          vmstat 1 5
