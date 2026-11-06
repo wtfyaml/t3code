@@ -48,9 +48,13 @@ runs:
           base=HEAD^1
           mode=()
         else
-          base=$BEFORE_SHA
-          git fetch --quiet --no-tags --depth=1 --filter=blob:none origin "$base" \
-            || fail_open "Could not fetch ${base}."
+          # Depot CI API-triggered runs carry no push `before` SHA; diff the
+          # tip commit like a single-commit push to main.
+          base=${BEFORE_SHA:-HEAD^1}
+          if [[ -n "$BEFORE_SHA" ]]; then
+            git fetch --quiet --no-tags --depth=1 --filter=blob:none origin "$base" \
+              || fail_open "Could not fetch ${base}."
+          fi
           # main keeps a full run as the backstop for anything the gate misses.
           mode=(--full)
         fi
